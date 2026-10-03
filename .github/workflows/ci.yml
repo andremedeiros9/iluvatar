@@ -1,13 +1,8 @@
 name: CI
 
-# Runs on every pull request (before merging) and on every push to any
-# branch, which covers the merge commit landing on its target branch
-# (after merging).
+# Runs on every pull request, before merging.
 on:
   pull_request:
-  push:
-    branches:
-      - '**'
 
 permissions:
   contents: read
