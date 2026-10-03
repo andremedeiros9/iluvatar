@@ -18,6 +18,19 @@ port      = 8080
 driver = "postgres"
 dsn    = ""
 
+<<<<<<< HEAD
+=======
+[ci]
+# Supported providers: github, gitlab
+provider = "github"
+
+[cloud]
+# Supported providers: none, aws
+# region is only read when provider = "aws".
+provider = "none"
+region   = "us-east-1"
+
+>>>>>>> b2ab2f1 (Added generation of config files.)
 # Define one [[resources]] block per CRUD resource you want generated.
 # communication selects how this resource's endpoints are exposed: rest,
 # grpc, or rpc. It defaults to rest when omitted.

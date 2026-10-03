@@ -1,0 +1,45 @@
+BINARY := {{.BinaryName}}
+DIST   := .dist
+{{- if eq .CloudProvider "aws"}}
+
+AWS_REGION     ?= {{.CloudRegion}}
+AWS_ACCOUNT_ID ?=
+{{- end}}
+
+.PHONY: build run test fmt vet lint vulns docker-build{{if eq .CloudProvider "aws"}} docker-login docker-push{{end}} clean
+
+build:
+	go build -o $(DIST)/$(BINARY) ./cmd/$(BINARY)
+
+run:
+	go run ./cmd/$(BINARY)
+
+test:
+	go test ./...
+
+fmt:
+	go fmt ./...
+
+vet:
+	go vet ./...
+
+lint:
+	golangci-lint run ./...
+
+vulns:
+	govulncheck ./...
+
+docker-build:
+	docker build -t $(BINARY) .
+{{- if eq .CloudProvider "aws"}}
+
+docker-login:
+	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
+
+docker-push: docker-build docker-login
+	docker tag $(BINARY):latest $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(BINARY):latest
+	docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(BINARY):latest
+{{- end}}
+
+clean:
+	rm -rf $(DIST)
