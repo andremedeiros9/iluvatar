@@ -1,0 +1,36 @@
+# iluvatar.toml
+#
+# This file describes the REST API that `iluvatar generate` will build.
+# Edit it, then run `iluvatar generate` from this directory.
+
+[project]
+name       = "{{.Name}}"
+module     = "{{.Module}}"
+go_version = "{{.GoVersion}}"
+
+[server]
+# Supported frameworks: net/http, chi, gin, echo
+framework = "net/http"
+port      = 8080
+
+[database]
+# Supported drivers: postgres, mysql, sqlite
+driver = "postgres"
+dsn    = ""
+
+# Define one [[resources]] block per CRUD resource you want generated.
+# communication selects how this resource's endpoints are exposed: rest,
+# grpc, or rpc. It defaults to rest when omitted.
+# Example:
+#
+# [[resources]]
+# name          = "user"
+# communication = "rest"
+#
+#   [[resources.fields]]
+#   name = "email"
+#   type = "string"
+#
+#   [[resources.fields]]
+#   name = "age"
+#   type = "int"
