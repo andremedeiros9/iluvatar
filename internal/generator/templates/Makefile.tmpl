@@ -6,7 +6,7 @@ AWS_REGION     ?= {{.CloudRegion}}
 AWS_ACCOUNT_ID ?=
 {{- end}}
 
-.PHONY: build run test fmt vet lint vulns docker-build{{if eq .CloudProvider "aws"}} docker-login docker-push{{end}} clean
+.PHONY: build run test fmt vet lint vulns proto migrate-up migrate-down docker-build{{if eq .CloudProvider "aws"}} docker-login docker-push{{end}} clean
 
 build:
 	go build -o $(DIST)/$(BINARY) ./cmd/$(BINARY)
@@ -28,6 +28,20 @@ lint:
 
 vulns:
 	govulncheck ./...
+
+# proto regenerates the *.pb.go/*_grpc.pb.go files from every resource's
+# .proto. Requires protoc, protoc-gen-go, and protoc-gen-go-grpc installed
+# locally; none of them are installed for you.
+proto:
+	protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative $$(find internal -name '*.proto')
+
+# migrate-up/migrate-down apply/revert migrations/ with golang-migrate's
+# `migrate` CLI, which isn't installed for you. DATABASE_DSN must be set.
+migrate-up:
+	migrate -path migrations -database "$$DATABASE_DSN" up
+
+migrate-down:
+	migrate -path migrations -database "$$DATABASE_DSN" down
 
 docker-build:
 	docker build -t $(BINARY) .

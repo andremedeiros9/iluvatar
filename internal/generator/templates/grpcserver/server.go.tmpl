@@ -1,0 +1,19 @@
+package grpcserver
+
+import (
+	"github.com/jmoiron/sqlx"
+	"google.golang.org/grpc"
+{{range .Resources}}
+	"{{$.Module}}/internal/{{.PackageName}}"
+	{{.PackageName}}pb "{{$.Module}}/internal/{{.PackageName}}/pb"
+{{end}})
+
+// New builds a gRPC server with every configured resource's service
+// registered, backed by db.
+func New(db *sqlx.DB) *grpc.Server {
+	s := grpc.NewServer()
+
+{{range .Resources}}	{{.PackageName}}pb.Register{{.PascalName}}ServiceServer(s, {{.PackageName}}.NewService({{.PackageName}}.NewRepository(db)))
+{{end}}
+	return s
+}

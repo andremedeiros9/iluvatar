@@ -17,6 +17,7 @@ const golangciLintVersion = "v2.14.0"
 // templateData is the set of values available to every generator template.
 type templateData struct {
 	BinaryName          string
+	Module              string
 	GoVersion           string
 	GolangciLintVersion string
 	Port                int
@@ -24,12 +25,15 @@ type templateData struct {
 	CloudRegion         string
 }
 
-// Generate writes the generated project's build tooling and deployment
-// scaffolding into dir, based on cfg: a Makefile, a CI pipeline, a
-// Dockerfile, a docker-compose setup (when the database needs one), a
-// .gitignore, and the runtime config the generated app itself will load
-// (config/<project-name>.toml). Unlike iluvatar.toml, which only exists to
-// drive generation, that file travels with the generated project.
+// Generate writes the generated project's build tooling, deployment
+// scaffolding, and gRPC CRUD implementation into dir, based on cfg: a
+// Makefile, a CI pipeline, a Dockerfile, a docker-compose setup (when the
+// database needs one), a .gitignore, the runtime config the generated app
+// itself will load (config/<project-name>.toml, unlike iluvatar.toml,
+// which only drives generation), and, for every configured resource, a
+// model/repository/service/.proto plus a migration. If any resources are
+// configured, it also ensures dir is a Go module with every dependency
+// the generated source needs resolved (`go mod init`/`go mod tidy`).
 func Generate(dir string, cfg *config.Config) error {
 	cloudProvider, err := normalizeCloudProvider(cfg.Cloud.Provider)
 	if err != nil {
@@ -38,6 +42,7 @@ func Generate(dir string, cfg *config.Config) error {
 
 	data := templateData{
 		BinaryName:          cfg.Project.Name,
+		Module:              cfg.Project.Module,
 		GoVersion:           cfg.Project.GoVersion,
 		GolangciLintVersion: golangciLintVersion,
 		Port:                cfg.Server.Port,
@@ -60,8 +65,17 @@ func Generate(dir string, cfg *config.Config) error {
 	if err := writeRuntimeConfig(dir, cfg); err != nil {
 		return err
 	}
+	if err := writeGitignore(dir); err != nil {
+		return err
+	}
+	if err := writeCRUD(dir, cfg, data); err != nil {
+		return err
+	}
 
-	return writeGitignore(dir)
+	if len(cfg.Resources) == 0 {
+		return nil
+	}
+	return ensureGoModule(dir, cfg.Project.Module)
 }
 
 func normalizeCloudProvider(raw string) (string, error) {

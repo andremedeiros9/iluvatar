@@ -236,6 +236,109 @@ func TestGenerateUnsupportedCloudProvider(t *testing.T) {
 	}
 }
 
+func TestGenerateCRUDRejectsNonGRPCCommunication(t *testing.T) {
+	dir := t.TempDir()
+	cfg := &config.Config{
+		Project:  config.Project{Name: "widgets", Module: "github.com/example/widgets"},
+		Database: config.Database{Driver: "sqlite"},
+		Resources: []config.Resource{
+			{Name: "user", Communication: "rest"},
+		},
+	}
+
+	err := generator.Generate(dir, cfg)
+	if err == nil {
+		t.Fatal("Generate: expected error for communication = \"rest\", got nil")
+	}
+	if !strings.Contains(err.Error(), "grpc") {
+		t.Errorf("error %q does not mention grpc", err)
+	}
+}
+
+func TestGenerateCRUDRejectsUnsupportedFieldType(t *testing.T) {
+	dir := t.TempDir()
+	cfg := &config.Config{
+		Project:  config.Project{Name: "widgets", Module: "github.com/example/widgets"},
+		Database: config.Database{Driver: "sqlite"},
+		Resources: []config.Resource{
+			{
+				Name:          "user",
+				Communication: "grpc",
+				Fields:        []config.Field{{Name: "avatar", Type: "blob"}},
+			},
+		},
+	}
+
+	if err := generator.Generate(dir, cfg); err == nil {
+		t.Fatal("Generate: expected error for unsupported field type, got nil")
+	}
+}
+
+// TestGenerateCRUDResourceFiles exercises the full gRPC CRUD generation
+// path for one resource, including ensureGoModule's real `go mod tidy
+// -e` call, so it needs network access and is slower than the rest of
+// this package's tests.
+func TestGenerateCRUDResourceFiles(t *testing.T) {
+	dir := t.TempDir()
+	cfg := &config.Config{
+		Project:  config.Project{Name: "widgets", Module: "github.com/example/widgets", GoVersion: "1.27.1"},
+		Server:   config.Server{Port: 9090},
+		Database: config.Database{Driver: "postgres"},
+		Resources: []config.Resource{
+			{
+				Name:          "user",
+				Communication: "grpc",
+				Fields: []config.Field{
+					{Name: "email", Type: "string"},
+					{Name: "signup_at", Type: "time"},
+					{Name: "referrer_id", Type: "uuid"},
+				},
+			},
+		},
+	}
+
+	if err := generator.Generate(dir, cfg); err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+
+	assertContains(t, filepath.Join(dir, "internal", "user", "pb", "user.proto"), "google.protobuf.Timestamp signup_at")
+	assertContains(t, filepath.Join(dir, "internal", "user", "pb", "user.proto"), "string referrer_id")
+	assertContains(t, filepath.Join(dir, "internal", "user", "model.go"), `db:"email"`)
+	assertContains(t, filepath.Join(dir, "internal", "user", "model.go"), "ReferrerId uuid.UUID")
+	assertContains(t, filepath.Join(dir, "internal", "user", "repository.go"), "INSERT INTO user")
+	assertContains(t, filepath.Join(dir, "internal", "user", "service.go"), "pb.UserServiceServer")
+	assertContains(t, filepath.Join(dir, "internal", "grpcserver", "server.go"), "RegisterUserServiceServer")
+	assertContains(t, filepath.Join(dir, "internal", "db", "db.go"), "jackc/pgx")
+	assertContains(t, filepath.Join(dir, "cmd", "widgets", "main.go"), `fmt.Sprintf(":%d", 9090)`)
+	assertContains(t, filepath.Join(dir, "migrations", "0001_create_user.up.sql"), "CREATE TABLE user")
+	assertContains(t, filepath.Join(dir, "migrations", "0001_create_user.down.sql"), "DROP TABLE user")
+
+	if _, err := os.Stat(filepath.Join(dir, "go.mod")); err != nil {
+		t.Errorf("go.mod should have been created: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "go.sum")); err != nil {
+		t.Errorf("go.sum should have been created: %v", err)
+	}
+}
+
+func TestGenerateNoCRUDFilesWithoutResources(t *testing.T) {
+	dir := t.TempDir()
+	cfg := &config.Config{
+		Project:  config.Project{Name: "widgets", Module: "github.com/example/widgets"},
+		Database: config.Database{Driver: "sqlite"},
+	}
+
+	if err := generator.Generate(dir, cfg); err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+
+	for _, p := range []string{"go.mod", "cmd", "internal/db", "internal/grpcserver", "migrations"} {
+		if _, err := os.Stat(filepath.Join(dir, p)); !os.IsNotExist(err) {
+			t.Errorf("%s should not exist when no resources are configured", p)
+		}
+	}
+}
+
 func assertContains(t *testing.T, path, substr string) {
 	t.Helper()
 

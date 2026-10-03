@@ -1,6 +1,6 @@
 # iluvatar.toml
 #
-# This file describes the REST API that `iluvatar generate` will build.
+# This file describes the API that `iluvatar generate` will build.
 # Edit it, then run `iluvatar generate` from this directory.
 
 [project]
@@ -9,17 +9,17 @@ module     = "{{.Module}}"
 go_version = "{{.GoVersion}}"
 
 [server]
-# Supported frameworks: net/http, chi, gin, echo
+# framework is reserved for future REST support and currently has no
+# effect; only gRPC resources are generated today.
 framework = "net/http"
-port      = 8080
+# port is the gRPC server's listen port.
+port = 8080
 
 [database]
 # Supported drivers: postgres, mysql, sqlite
 driver = "postgres"
 dsn    = ""
 
-<<<<<<< HEAD
-=======
 [ci]
 # Supported providers: github, gitlab
 provider = "github"
@@ -30,15 +30,17 @@ provider = "github"
 provider = "none"
 region   = "us-east-1"
 
->>>>>>> b2ab2f1 (Added generation of config files.)
 # Define one [[resources]] block per CRUD resource you want generated.
-# communication selects how this resource's endpoints are exposed: rest,
-# grpc, or rpc. It defaults to rest when omitted.
+# communication selects how this resource's endpoints are exposed. Only
+# "grpc" is implemented today; "rest" and "rpc" are reserved for later.
+# Each field's type is one of: string, int, float, bool, time, uuid.
+# Every resource automatically gets a uuid id plus created_at/updated_at
+# timestamps, so don't declare those yourself.
 # Example:
 #
 # [[resources]]
 # name          = "user"
-# communication = "rest"
+# communication = "grpc"
 #
 #   [[resources.fields]]
 #   name = "email"

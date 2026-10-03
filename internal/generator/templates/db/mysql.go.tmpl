@@ -1,0 +1,36 @@
+package db
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/jmoiron/sqlx"
+
+	_ "github.com/go-sql-driver/mysql"
+)
+
+// Open connects to the configured MySQL database. DATABASE_DSN, if set,
+// overrides the DSN assembled from MYSQL_USER/MYSQL_PASSWORD/
+// MYSQL_DATABASE (the vars docker-compose's db service is seeded from).
+func Open() (*sqlx.DB, error) {
+	dsn := os.Getenv("DATABASE_DSN")
+	if dsn == "" {
+		dsn = fmt.Sprintf(
+			"%s:%s@tcp(db:3306)/%s?parseTime=true",
+			os.Getenv("MYSQL_USER"),
+			os.Getenv("MYSQL_PASSWORD"),
+			os.Getenv("MYSQL_DATABASE"),
+		)
+	}
+
+	sqlDB, err := sqlx.Open("mysql", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("opening mysql connection: %w", err)
+	}
+
+	if err := sqlDB.Ping(); err != nil {
+		return nil, fmt.Errorf("pinging mysql: %w", err)
+	}
+
+	return sqlDB, nil
+}

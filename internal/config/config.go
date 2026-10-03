@@ -28,11 +28,15 @@ type Project struct {
 	GoVersion string `toml:"go_version"`
 }
 
-// Server configures the generated HTTP server.
+// Server configures the generated server.
 type Server struct {
-	// Framework is one of: net/http, chi, gin, echo.
+	// Framework is one of: net/http, chi, gin, echo. Currently unused:
+	// iluvatar only generates gRPC services for now, so there's no REST
+	// router to pick a framework for yet. Reserved for when REST support
+	// lands.
 	Framework string `toml:"framework"`
-	Port      int    `toml:"port"`
+	// Port is the gRPC server's listen port.
+	Port int `toml:"port"`
 }
 
 // Database configures the generated data layer.
@@ -60,6 +64,7 @@ type Cloud struct {
 // Field is a single column/attribute on a Resource.
 type Field struct {
 	Name string `toml:"name"`
+	// Type is one of: string, int, float, bool, time, uuid.
 	Type string `toml:"type"`
 }
 
@@ -68,7 +73,8 @@ type Resource struct {
 	Name   string  `toml:"name"`
 	Fields []Field `toml:"fields"`
 	// Communication is the protocol this resource's endpoints are exposed
-	// over: rest, grpc, or rpc. Defaults to rest.
+	// over. Only grpc is currently implemented; rest and rpc are reserved
+	// for future use and are rejected by `iluvatar generate` today.
 	Communication string `toml:"communication"`
 }
 

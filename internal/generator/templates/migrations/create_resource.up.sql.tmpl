@@ -1,0 +1,6 @@
+CREATE TABLE {{.TableName}} (
+    id {{.IDSQLType}} PRIMARY KEY,
+{{range .Fields}}    {{.Name}} {{.SQLType}} NOT NULL,
+{{end}}    created_at {{.TimestampSQLType}} NOT NULL,
+    updated_at {{.TimestampSQLType}} NOT NULL
+);
