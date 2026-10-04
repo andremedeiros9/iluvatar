@@ -2,7 +2,7 @@ package cli
 
 import (
 	"errors"
-	"fmt"
+	"log"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -34,8 +34,9 @@ func newInitCommand() *cobra.Command {
 				return errors.New("failed to initialize project: " + err.Error())
 			}
 
-			_, err := fmt.Fprintf(cmd.OutOrStdout(), "Created %s\n", filepath.Join(path, config.FileName))
-			return err
+			log.New(cmd.OutOrStdout(), "", 0).Printf("Created %s\n", filepath.Join(path, config.FileName)) 
+
+			return nil
 		},
 	}
 

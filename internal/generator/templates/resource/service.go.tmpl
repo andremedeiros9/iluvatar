@@ -1,0 +1,120 @@
+package {{.PackageName}}
+
+import (
+	"context"
+
+	"github.com/google/uuid"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	pb "{{.Module}}/internal/{{.PackageName}}/pb"
+)
+
+// Service implements pb.{{.PascalName}}ServiceServer.
+type Service struct {
+	pb.Unimplemented{{.PascalName}}ServiceServer
+
+	repo *Repository
+}
+
+// NewService returns a Service backed by repo.
+func NewService(repo *Repository) *Service {
+	return &Service{repo: repo}
+}
+
+func (s *Service) Create{{.PascalName}}(ctx context.Context, req *pb.Create{{.PascalName}}Request) (*pb.Create{{.PascalName}}Response, error) {
+	m := &{{.PascalName}}{}
+{{range .Fields}}{{if eq .GoType "uuid.UUID"}}
+	{{.CamelName}}, err := uuid.Parse(req.{{.PascalName}})
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid {{.Name}}: %v", err)
+	}
+	m.{{.PascalName}} = {{.CamelName}}
+{{else if eq .GoType "time.Time"}}
+	m.{{.PascalName}} = req.{{.PascalName}}.AsTime()
+{{else}}
+	m.{{.PascalName}} = req.{{.PascalName}}
+{{end}}{{end}}
+	if err := s.repo.Create(ctx, m); err != nil {
+		return nil, status.Errorf(codes.Internal, "creating {{.LowerName}}: %v", err)
+	}
+
+	return &pb.Create{{.PascalName}}Response{ {{.PascalName}}: toProto(m)}, nil
+}
+
+func (s *Service) Get{{.PascalName}}(ctx context.Context, req *pb.Get{{.PascalName}}Request) (*pb.Get{{.PascalName}}Response, error) {
+	id, err := uuid.Parse(req.Id)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid id: %v", err)
+	}
+
+	m, err := s.repo.Get(ctx, id)
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "{{.LowerName}} %s not found: %v", req.Id, err)
+	}
+
+	return &pb.Get{{.PascalName}}Response{ {{.PascalName}}: toProto(m)}, nil
+}
+
+func (s *Service) List{{.PascalName}}(ctx context.Context, req *pb.List{{.PascalName}}Request) (*pb.List{{.PascalName}}Response, error) {
+	items, err := s.repo.List(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "listing {{.LowerName}}s: %v", err)
+	}
+
+	resp := &pb.List{{.PascalName}}Response{}
+	for i := range items {
+		resp.{{.PluralPb}} = append(resp.{{.PluralPb}}, toProto(&items[i]))
+	}
+	return resp, nil
+}
+
+func (s *Service) Update{{.PascalName}}(ctx context.Context, req *pb.Update{{.PascalName}}Request) (*pb.Update{{.PascalName}}Response, error) {
+	id, err := uuid.Parse(req.Id)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid id: %v", err)
+	}
+
+	m := &{{.PascalName}}{ID: id}
+{{range .Fields}}{{if eq .GoType "uuid.UUID"}}
+	{{.CamelName}}, err := uuid.Parse(req.{{.PascalName}})
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid {{.Name}}: %v", err)
+	}
+	m.{{.PascalName}} = {{.CamelName}}
+{{else if eq .GoType "time.Time"}}
+	m.{{.PascalName}} = req.{{.PascalName}}.AsTime()
+{{else}}
+	m.{{.PascalName}} = req.{{.PascalName}}
+{{end}}{{end}}
+	if err := s.repo.Update(ctx, m); err != nil {
+		return nil, status.Errorf(codes.Internal, "updating {{.LowerName}} %s: %v", req.Id, err)
+	}
+
+	return &pb.Update{{.PascalName}}Response{ {{.PascalName}}: toProto(m)}, nil
+}
+
+func (s *Service) Delete{{.PascalName}}(ctx context.Context, req *pb.Delete{{.PascalName}}Request) (*pb.Delete{{.PascalName}}Response, error) {
+	id, err := uuid.Parse(req.Id)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid id: %v", err)
+	}
+
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return nil, status.Errorf(codes.Internal, "deleting {{.LowerName}} %s: %v", req.Id, err)
+	}
+
+	return &pb.Delete{{.PascalName}}Response{}, nil
+}
+
+func toProto(m *{{.PascalName}}) *pb.{{.PascalName}} {
+	return &pb.{{.PascalName}}{
+		Id: m.ID.String(),
+{{range .Fields}}{{if eq .GoType "uuid.UUID"}}		{{.PascalName}}: m.{{.PascalName}}.String(),
+{{else if eq .GoType "time.Time"}}		{{.PascalName}}: timestamppb.New(m.{{.PascalName}}),
+{{else}}		{{.PascalName}}: m.{{.PascalName}},
+{{end}}{{end}}		CreatedAt: timestamppb.New(m.CreatedAt),
+		UpdatedAt: timestamppb.New(m.UpdatedAt),
+	}
+}

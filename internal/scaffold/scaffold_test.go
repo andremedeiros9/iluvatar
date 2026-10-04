@@ -6,6 +6,7 @@ import (
 
 	"github.com/andremedeiros9/iluvatar/internal/config"
 	"github.com/andremedeiros9/iluvatar/internal/scaffold"
+	"github.com/stretchr/testify/require"
 )
 
 func TestInit(t *testing.T) {
@@ -16,21 +17,13 @@ func TestInit(t *testing.T) {
 		Name:   "widgets",
 		Module: "github.com/example/widgets",
 	})
-	if err != nil {
-		t.Fatalf("Init: %v", err)
-	}
+	require.NoError(t, err, "initializing project")
 
 	cfg, err := config.Load(filepath.Join(path, config.FileName))
-	if err != nil {
-		t.Fatalf("Load generated config: %v", err)
-	}
+	require.NoError(t, err, "loading generated config")
 
-	if cfg.Project.Name != "widgets" {
-		t.Errorf("Project.Name = %q, want %q", cfg.Project.Name, "widgets")
-	}
-	if cfg.Project.Module != "github.com/example/widgets" {
-		t.Errorf("Project.Module = %q, want %q", cfg.Project.Module, "github.com/example/widgets")
-	}
+	require.Equal(t, "widgets", cfg.Project.Name)
+	require.Equal(t, "github.com/example/widgets", cfg.Project.Module)
 }
 
 func TestInitRefusesToOverwrite(t *testing.T) {
@@ -38,11 +31,9 @@ func TestInitRefusesToOverwrite(t *testing.T) {
 	path := filepath.Join(dir, "widgets")
 	opts := scaffold.Options{Name: "widgets", Module: "github.com/example/widgets"}
 
-	if err := scaffold.Init(path, opts); err != nil {
-		t.Fatalf("first Init: %v", err)
-	}
+	err := scaffold.Init(path, opts)
+	require.NoError(t, err, "initializing project")
 
-	if err := scaffold.Init(path, opts); err == nil {
-		t.Fatal("second Init: expected error, got nil")
-	}
+	err = scaffold.Init(path, opts)
+	require.Error(t, err, "initializing project in existing directory should fail")
 }
