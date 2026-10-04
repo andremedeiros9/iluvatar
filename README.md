@@ -58,8 +58,13 @@ directory to your user `PATH`. Open a new terminal afterwards. Set
 ### Manual download
 
 Download the archive for your system from the
-[latest release](https://github.com/andremedeiros9/iluvatar/releases/latest),
-extract it, and move the `iluvatar` binary to a directory on your `PATH`.
+[latest release](https://github.com/andremedeiros9/iluvatar/releases/latest)
+and extract it. Each archive holds the `iluvatar` binary and an installer
+that puts it in the same place as the commands above, without downloading
+anything else:
+
+- **Linux and macOS**: run `./install.sh` from the extracted folder.
+- **Windows**: double-click `install.cmd` in the extracted folder.
 
 | System                | Archive                         |
 | --------------------- | ------------------------------- |

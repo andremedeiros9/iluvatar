@@ -1,2 +1,4 @@
 # install.sh is piped straight into sh, which chokes on CRLF line endings.
 *.sh text eol=lf
+# install.cmd is run by cmd.exe, which expects CRLF.
+*.cmd text eol=crlf
