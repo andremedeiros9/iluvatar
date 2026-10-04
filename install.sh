@@ -1,0 +1,67 @@
+#!/bin/sh
+# Installs the latest iluvatar release on Linux or macOS.
+#
+#   curl -fsSL https://github.com/andremedeiros9/iluvatar/releases/latest/download/install.sh | sh
+#
+# The binary goes into ~/.local/bin; set ILUVATAR_INSTALL_DIR to put it
+# somewhere else.
+set -eu
+
+repo="andremedeiros9/iluvatar"
+install_dir="${ILUVATAR_INSTALL_DIR:-$HOME/.local/bin}"
+
+case "$(uname -s)" in
+    Linux) os="linux" ;;
+    Darwin) os="darwin" ;;
+    *)
+        echo "iluvatar: unsupported OS $(uname -s); on Windows use install.ps1" >&2
+        exit 1
+        ;;
+esac
+
+case "$(uname -m)" in
+    x86_64 | amd64) arch="amd64" ;;
+    arm64 | aarch64) arch="arm64" ;;
+    *)
+        echo "iluvatar: unsupported architecture $(uname -m)" >&2
+        exit 1
+        ;;
+esac
+
+archive="iluvatar_${os}_${arch}.tar.gz"
+base_url="https://github.com/${repo}/releases/latest/download"
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+echo "Downloading ${archive}..."
+curl -fsSL -o "$tmp/$archive" "$base_url/$archive"
+curl -fsSL -o "$tmp/checksums.txt" "$base_url/checksums.txt"
+
+if command -v sha256sum >/dev/null 2>&1; then
+    actual="$(sha256sum "$tmp/$archive" | cut -d ' ' -f 1)"
+elif command -v shasum >/dev/null 2>&1; then
+    actual="$(shasum -a 256 "$tmp/$archive" | cut -d ' ' -f 1)"
+else
+    actual=""
+    echo "iluvatar: no sha256sum or shasum found, skipping checksum verification" >&2
+fi
+
+if [ -n "$actual" ]; then
+    expected="$(awk -v file="$archive" '$2 == file { print $1 }' "$tmp/checksums.txt")"
+    if [ "$actual" != "$expected" ]; then
+        echo "iluvatar: checksum mismatch for ${archive}" >&2
+        exit 1
+    fi
+fi
+
+mkdir -p "$install_dir"
+tar -xzf "$tmp/$archive" -C "$install_dir" iluvatar
+chmod +x "$install_dir/iluvatar"
+
+echo "Installed iluvatar to $install_dir/iluvatar"
+
+case ":$PATH:" in
+    *":$install_dir:"*) ;;
+    *) echo "Add $install_dir to your PATH to run it as 'iluvatar'." ;;
+esac

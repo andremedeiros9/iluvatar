@@ -1,0 +1,52 @@
+name: Release
+
+# Runs when a version tag (e.g. v0.1.0) is pushed: builds iluvatar for
+# every supported OS/architecture and publishes the archives as a GitHub
+# release. install.sh and install.ps1 download from the latest release, so
+# the archive names below must stay in sync with them.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build archives
+        run: |
+          mkdir -p dist
+          for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
+            goos="${target%/*}"
+            goarch="${target#*/}"
+            out="$(mktemp -d)"
+
+            if [ "$goos" = "windows" ]; then
+              CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" go build -trimpath -ldflags "-s -w" -o "$out/iluvatar.exe" ./cmd/iluvatar
+              (cd "$out" && zip -q "$GITHUB_WORKSPACE/dist/iluvatar_${goos}_${goarch}.zip" iluvatar.exe)
+            else
+              CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" go build -trimpath -ldflags "-s -w" -o "$out/iluvatar" ./cmd/iluvatar
+              tar -C "$out" -czf "dist/iluvatar_${goos}_${goarch}.tar.gz" iluvatar
+            fi
+          done
+
+          cd dist
+          sha256sum iluvatar_* > checksums.txt
+
+      # The installers are published with the release too, so the README's
+      # one-line install commands always run the ones matching it.
+      - name: Add installers
+        run: cp install.sh install.ps1 dist/
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --generate-notes

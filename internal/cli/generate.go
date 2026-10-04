@@ -27,12 +27,18 @@ func newGenerateCommand() *cobra.Command {
 				return errors.New("failed to load config: " + err.Error())
 			}
 
-			if err := generator.Generate(dir, cfg); err != nil {
+			bar := newProgressBar(cmd.ErrOrStderr())
+			if err := generator.Generate(dir, cfg, generator.WithProgress(bar)); err != nil {
+				bar.Stop()
 				return errors.New("failed to generate project: " + err.Error())
 			}
+			bar.Done()
 
-			// escrever o diretorio desde da root
-			log.New(cmd.OutOrStdout(), "", 0).Printf("Generated project in %s\n", dir)
+			absDir, err := filepath.Abs(dir)
+			if err != nil {
+				absDir = dir
+			}
+			log.New(cmd.OutOrStdout(), "", 0).Printf("Generated project in %s\n", absDir)
 			return nil
 		},
 	}
