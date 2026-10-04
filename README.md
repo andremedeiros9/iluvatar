@@ -29,8 +29,6 @@
 ```
 
 ## Install
-
-iluvatar needs [Go](https://go.dev/dl/) installed to generate a project.
 Pick the instructions for your system.
 
 ### Linux and macOS
