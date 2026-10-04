@@ -1,0 +1,13 @@
+FROM golang:{{.GoVersion}}-alpine AS builder
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o /out/{{.BinaryName}} ./cmd/{{.BinaryName}}
+
+FROM alpine:3.20
+RUN adduser -D -u 10001 app
+COPY --from=builder /out/{{.BinaryName}} /usr/local/bin/{{.BinaryName}}
+USER app
+EXPOSE {{.Port}}
+ENTRYPOINT ["/usr/local/bin/{{.BinaryName}}"]

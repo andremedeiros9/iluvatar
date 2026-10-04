@@ -1,0 +1,31 @@
+# Runs on every merge request, before merging.
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+stages:
+  - lint
+  - test
+  - vulns
+
+default:
+  image: golang:{{.GoVersion}}
+
+lint:
+  stage: lint
+  before_script:
+    - go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GolangciLintVersion}}
+  script:
+    - golangci-lint run ./...
+
+test:
+  stage: test
+  script:
+    - go test ./...
+
+vulns:
+  stage: vulns
+  before_script:
+    - go install golang.org/x/vuln/cmd/govulncheck@latest
+  script:
+    - govulncheck ./...

@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package {{.PackageName}};
+
+option go_package = "{{.Module}}/internal/{{.PackageName}}/pb;{{.PackageName}}pb";
+
+import "google/protobuf/timestamp.proto";
+
+message {{.PascalName}} {
+  string id = 1;
+{{range .Fields}}  {{.ProtoType}} {{.Name}} = {{.NumberWithID}};
+{{end}}  google.protobuf.Timestamp created_at = {{.CreatedAtNumber}};
+  google.protobuf.Timestamp updated_at = {{.UpdatedAtNumber}};
+}
+
+message Create{{.PascalName}}Request {
+{{range .Fields}}  {{.ProtoType}} {{.Name}} = {{.NumberNoID}};
+{{end}}}
+
+message Create{{.PascalName}}Response {
+  {{.PascalName}} {{.LowerName}} = 1;
+}
+
+message Get{{.PascalName}}Request {
+  string id = 1;
+}
+
+message Get{{.PascalName}}Response {
+  {{.PascalName}} {{.LowerName}} = 1;
+}
+
+message List{{.PascalName}}Request {
+}
+
+message List{{.PascalName}}Response {
+  repeated {{.PascalName}} {{.PluralField}} = 1;
+}
+
+message Update{{.PascalName}}Request {
+  string id = 1;
+{{range .Fields}}  {{.ProtoType}} {{.Name}} = {{.NumberWithID}};
+{{end}}}
+
+message Update{{.PascalName}}Response {
+  {{.PascalName}} {{.LowerName}} = 1;
+}
+
+message Delete{{.PascalName}}Request {
+  string id = 1;
+}
+
+message Delete{{.PascalName}}Response {
+}
+
+service {{.PascalName}}Service {
+  rpc Create{{.PascalName}}(Create{{.PascalName}}Request) returns (Create{{.PascalName}}Response);
+  rpc Get{{.PascalName}}(Get{{.PascalName}}Request) returns (Get{{.PascalName}}Response);
+  rpc List{{.PascalName}}(List{{.PascalName}}Request) returns (List{{.PascalName}}Response);
+  rpc Update{{.PascalName}}(Update{{.PascalName}}Request) returns (Update{{.PascalName}}Response);
+  rpc Delete{{.PascalName}}(Delete{{.PascalName}}Request) returns (Delete{{.PascalName}}Response);
+}

@@ -1,0 +1,85 @@
+package {{.PackageName}}
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
+)
+
+// Repository stores {{.PascalName}} records in {{.TableName}}.
+type Repository struct {
+	db *sqlx.DB
+}
+
+// NewRepository returns a Repository backed by db.
+func NewRepository(db *sqlx.DB) *Repository {
+	return &Repository{db: db}
+}
+
+// Create inserts m, setting its ID, CreatedAt, and UpdatedAt.
+func (r *Repository) Create(ctx context.Context, m *{{.PascalName}}) error {
+	m.ID = uuid.New()
+	now := time.Now().UTC()
+	m.CreatedAt = now
+	m.UpdatedAt = now
+
+	query := r.db.Rebind(`INSERT INTO {{.TableName}} ({{.InsertColumns}}) VALUES ({{.InsertPlaceholders}})`)
+	_, err := r.db.ExecContext(ctx, query,
+		m.ID,
+{{range .Fields}}		m.{{.PascalName}},
+{{end}}		m.CreatedAt,
+		m.UpdatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("creating {{.LowerName}}: %w", err)
+	}
+	return nil
+}
+
+// Get returns the {{.LowerName}} with the given id.
+func (r *Repository) Get(ctx context.Context, id uuid.UUID) (*{{.PascalName}}, error) {
+	var m {{.PascalName}}
+	query := r.db.Rebind(`SELECT {{.SelectColumns}} FROM {{.TableName}} WHERE id = ?`)
+	if err := r.db.GetContext(ctx, &m, query, id); err != nil {
+		return nil, fmt.Errorf("getting {{.LowerName}} %s: %w", id, err)
+	}
+	return &m, nil
+}
+
+// List returns every {{.LowerName}}.
+func (r *Repository) List(ctx context.Context) ([]{{.PascalName}}, error) {
+	var items []{{.PascalName}}
+	query := r.db.Rebind(`SELECT {{.SelectColumns}} FROM {{.TableName}} ORDER BY created_at`)
+	if err := r.db.SelectContext(ctx, &items, query); err != nil {
+		return nil, fmt.Errorf("listing {{.LowerName}}s: %w", err)
+	}
+	return items, nil
+}
+
+// Update overwrites the stored fields of m, refreshing UpdatedAt.
+func (r *Repository) Update(ctx context.Context, m *{{.PascalName}}) error {
+	m.UpdatedAt = time.Now().UTC()
+
+	query := r.db.Rebind(`UPDATE {{.TableName}} SET {{.UpdateSetClause}} WHERE id = ?`)
+	_, err := r.db.ExecContext(ctx, query,
+{{range .Fields}}		m.{{.PascalName}},
+{{end}}		m.UpdatedAt,
+		m.ID,
+	)
+	if err != nil {
+		return fmt.Errorf("updating {{.LowerName}} %s: %w", m.ID, err)
+	}
+	return nil
+}
+
+// Delete removes the {{.LowerName}} with the given id.
+func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
+	query := r.db.Rebind(`DELETE FROM {{.TableName}} WHERE id = ?`)
+	if _, err := r.db.ExecContext(ctx, query, id); err != nil {
+		return fmt.Errorf("deleting {{.LowerName}} %s: %w", id, err)
+	}
+	return nil
+}

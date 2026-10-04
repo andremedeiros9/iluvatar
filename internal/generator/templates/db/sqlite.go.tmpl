@@ -1,0 +1,30 @@
+package db
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/jmoiron/sqlx"
+
+	_ "modernc.org/sqlite"
+)
+
+// Open connects to the configured SQLite database. SQLITE_PATH, if set,
+// overrides the default database file path.
+func Open() (*sqlx.DB, error) {
+	path := os.Getenv("SQLITE_PATH")
+	if path == "" {
+		path = "{{.BinaryName}}.db"
+	}
+
+	sqlDB, err := sqlx.Open("sqlite", path)
+	if err != nil {
+		return nil, fmt.Errorf("opening sqlite database: %w", err)
+	}
+
+	if err := sqlDB.Ping(); err != nil {
+		return nil, fmt.Errorf("pinging sqlite: %w", err)
+	}
+
+	return sqlDB, nil
+}
