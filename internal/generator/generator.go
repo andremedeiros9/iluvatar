@@ -80,9 +80,7 @@ func Generate(dir string, cfg *config.Config) error {
 
 func normalizeCloudProvider(raw string) (string, error) {
 	switch raw {
-	case "":
-		return "none", nil
-	case "none", "aws":
+	case "", "aws":
 		return raw, nil
 	default:
 		return "", fmt.Errorf("unsupported cloud provider %q (want %q or %q)", raw, "none", "aws")

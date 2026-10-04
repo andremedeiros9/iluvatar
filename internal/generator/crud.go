@@ -36,23 +36,23 @@ func writeCRUD(dir string, cfg *config.Config, data templateData) error {
 
 		rd, err := buildResourceData(cfg.Project.Module, cfg.Database.Driver, res)
 		if err != nil {
-			return err
+			return fmt.Errorf("could not build resource data: %w", err)
 		}
 		resources = append(resources, rd)
 
 		if err := writeResourceFiles(dir, rd); err != nil {
-			return err
+			return fmt.Errorf("could not write resource files: %w", err)
 		}
 		if err := writeMigration(dir, i+1, rd); err != nil {
-			return err
+			return fmt.Errorf("could not write migration: %w", err)
 		}
 	}
 
 	if err := writeGRPCServer(dir, cfg.Project.Module, resources); err != nil {
-		return err
+		return fmt.Errorf("could not write gRPC server: %w", err)
 	}
 	if err := writeDB(dir, cfg.Database.Driver, data); err != nil {
-		return err
+		return fmt.Errorf("could not write database files: %w", err)
 	}
 	return writeMain(dir, data)
 }
@@ -61,13 +61,13 @@ func writeResourceFiles(dir string, rd resourceData) error {
 	base := filepath.Join("internal", rd.PackageName)
 
 	if err := renderGo(dir, filepath.Join(base, "model.go"), "templates/resource/model.go.tmpl", rd); err != nil {
-		return err
+		return fmt.Errorf("could not render model.go: %w", err)
 	}
 	if err := renderGo(dir, filepath.Join(base, "repository.go"), "templates/resource/repository.go.tmpl", rd); err != nil {
-		return err
+		return fmt.Errorf("could not render repository.go: %w", err)
 	}
 	if err := renderGo(dir, filepath.Join(base, "service.go"), "templates/resource/service.go.tmpl", rd); err != nil {
-		return err
+		return fmt.Errorf("could not render service.go: %w", err)
 	}
 	return render(dir, filepath.Join(base, "pb", rd.Name+".proto"), "templates/resource/resource.proto.tmpl", rd)
 }
@@ -76,7 +76,7 @@ func writeMigration(dir string, seq int, rd resourceData) error {
 	name := fmt.Sprintf("%04d_create_%s", seq, rd.TableName)
 
 	if err := render(dir, filepath.Join("migrations", name+".up.sql"), "templates/migrations/create_resource.up.sql.tmpl", rd); err != nil {
-		return err
+		return fmt.Errorf("could not render migration up.sql: %w", err)
 	}
 	return render(dir, filepath.Join("migrations", name+".down.sql"), "templates/migrations/create_resource.down.sql.tmpl", rd)
 }

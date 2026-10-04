@@ -11,12 +11,12 @@ func writeCompose(dir, driver string, data templateData) error {
 		return nil
 	case "", "postgres":
 		if err := render(dir, "docker-compose.yml", "templates/compose/postgres.yml.tmpl", data); err != nil {
-			return err
+			return fmt.Errorf("could not render docker-compose.yml for postgres: %w", err)
 		}
 		return render(dir, ".env.example", "templates/compose/postgres.env.tmpl", data)
 	case "mysql":
 		if err := render(dir, "docker-compose.yml", "templates/compose/mysql.yml.tmpl", data); err != nil {
-			return err
+			return fmt.Errorf("could not render docker-compose.yml for mysql: %w", err)
 		}
 		return render(dir, ".env.example", "templates/compose/mysql.env.tmpl", data)
 	default:

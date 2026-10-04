@@ -1,7 +1,8 @@
 package cli
 
 import (
-	"fmt"
+	"errors"
+	"log"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -23,15 +24,16 @@ func newGenerateCommand() *cobra.Command {
 
 			cfg, err := config.Load(filepath.Join(dir, config.FileName))
 			if err != nil {
-				return err
+				return errors.New("failed to load config: " + err.Error())
 			}
 
 			if err := generator.Generate(dir, cfg); err != nil {
-				return err
+				return errors.New("failed to generate project: " + err.Error())
 			}
 
-			_, err = fmt.Fprintf(cmd.OutOrStdout(), "Generated project in %s\n", dir)
-			return err
+			// escrever o diretorio desde da root
+			log.New(cmd.OutOrStdout(), "", 0).Printf("Generated project in %s\n", dir)
+			return nil
 		},
 	}
 
