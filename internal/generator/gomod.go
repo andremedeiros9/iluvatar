@@ -13,12 +13,9 @@ import (
 // the Go toolchain already required to run iluvatar itself, rather than
 // hand-templating version-pinned go.mod/go.sum content that would drift.
 //
-// tidy runs with -e: every grpc resource imports its own <resource>/pb
-// package, which only gets real .go source once `make proto` has been
-// run (iluvatar only writes the .proto file). Without -e, tidy would
-// refuse to resolve anything because that one local package looks
-// unresolvable; -e resolves every dependency it can and tolerates that
-// one expected failure.
+// It must run after generateProtos: every grpc resource imports its own
+// <resource>/pb package, which only has .go source once protoc has
+// compiled the resource's .proto.
 func ensureGoModule(dir, module string) error {
 	_, err := os.Stat(filepath.Join(dir, "go.mod"))
 	switch {
@@ -32,7 +29,7 @@ func ensureGoModule(dir, module string) error {
 		return fmt.Errorf("checking for existing go.mod: %w", err)
 	}
 
-	return runGo(dir, "mod", "tidy", "-e")
+	return runGo(dir, "mod", "tidy")
 }
 
 func runGo(dir string, args ...string) error {

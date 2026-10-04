@@ -277,9 +277,10 @@ func TestGenerateCRUDRejectsUnsupportedFieldType(t *testing.T) {
 }
 
 // TestGenerateCRUDResourceFiles exercises the full gRPC CRUD generation
-// path for one resource, including ensureGoModule's real `go mod tidy
-// -e` call, so it needs network access and is slower than the rest of
-// this package's tests.
+// path for one resource, including the real protoc run (which installs
+// protoc and its Go plugins if they're missing) and ensureGoModule's real
+// `go mod tidy` call, so it needs network access and is slower than the
+// rest of this package's tests.
 func TestGenerateCRUDResourceFiles(t *testing.T) {
 	dir := t.TempDir()
 	cfg := &config.Config{
@@ -304,6 +305,8 @@ func TestGenerateCRUDResourceFiles(t *testing.T) {
 
 	assertContains(t, filepath.Join(dir, "internal", "user", "pb", "user.proto"), "google.protobuf.Timestamp signup_at")
 	assertContains(t, filepath.Join(dir, "internal", "user", "pb", "user.proto"), "string referrer_id")
+	assertContains(t, filepath.Join(dir, "internal", "user", "pb", "user.pb.go"), "package userpb")
+	assertContains(t, filepath.Join(dir, "internal", "user", "pb", "user_grpc.pb.go"), "UserServiceServer")
 	assertContains(t, filepath.Join(dir, "internal", "user", "model.go"), `db:"email"`)
 	assertContains(t, filepath.Join(dir, "internal", "user", "model.go"), "ReferrerId uuid.UUID")
 	assertContains(t, filepath.Join(dir, "internal", "user", "repository.go"), "INSERT INTO user")
@@ -336,6 +339,34 @@ func TestGenerateNoCRUDFilesWithoutResources(t *testing.T) {
 		_, err := os.Stat(filepath.Join(dir, p))
 		require.Error(t, err, "%s should not exist when no resources are configured", p)
 	}
+}
+
+type recordedProgress struct {
+	steps []string
+	total int
+}
+
+func (p *recordedProgress) Step(done, total int, name string) {
+	p.steps = append(p.steps, name)
+	p.total = total
+}
+
+func (p *recordedProgress) Logf(string, ...any) {}
+
+func TestGenerateReportsProgress(t *testing.T) {
+	dir := t.TempDir()
+	cfg := &config.Config{
+		Project:  config.Project{Name: "widgets"},
+		Database: config.Database{Driver: "sqlite"},
+	}
+	progress := &recordedProgress{}
+
+	err := generator.Generate(dir, cfg, generator.WithProgress(progress))
+	require.NoError(t, err)
+
+	require.Len(t, progress.steps, progress.total, "every step should be reported once")
+	require.Equal(t, "Writing Makefile", progress.steps[0])
+	require.NotContains(t, progress.steps, "Compiling protos", "resource-only steps should be left out when no resources are configured")
 }
 
 func assertContains(t *testing.T, path, substr string) {
