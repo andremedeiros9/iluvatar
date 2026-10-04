@@ -74,7 +74,7 @@ func TestGenerateCIProvider(t *testing.T) {
 			cfg:  cfgUnsupported,
 			assertions: func(err error) {
 				require.Error(t, err)
-				require.Equal(t, err.Error(), "Generate: expected error for unsupported CI provider, got nil")
+				require.Equal(t, err.Error(), "unsupported ci provider \"bitbucket\" (want \"github\" or \"gitlab\")")
 			},
 		},
 	}
@@ -334,7 +334,7 @@ func TestGenerateNoCRUDFilesWithoutResources(t *testing.T) {
 
 	for _, p := range []string{"go.mod", "cmd", "internal/db", "internal/grpcserver", "migrations"} {
 		_, err := os.Stat(filepath.Join(dir, p))
-		require.NoError(t, err, "%s should not exist when no resources are configured", p)
+		require.Error(t, err, "%s should not exist when no resources are configured", p)
 	}
 }
 
