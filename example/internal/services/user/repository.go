@@ -7,6 +7,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+
+	domainuser "example/internal/domain/user"
 )
 
 // Repository stores User records in user.
@@ -20,7 +22,7 @@ func NewRepository(db *sqlx.DB) *Repository {
 }
 
 // Create inserts m, setting its ID, CreatedAt, and UpdatedAt.
-func (r *Repository) Create(ctx context.Context, m *User) error {
+func (r *Repository) Create(ctx context.Context, m *domainuser.User) error {
 	m.ID = uuid.New()
 	now := time.Now().UTC()
 	m.CreatedAt = now
@@ -41,8 +43,8 @@ func (r *Repository) Create(ctx context.Context, m *User) error {
 }
 
 // Get returns the user with the given id.
-func (r *Repository) Get(ctx context.Context, id uuid.UUID) (*User, error) {
-	var m User
+func (r *Repository) Get(ctx context.Context, id uuid.UUID) (*domainuser.User, error) {
+	var m domainuser.User
 	query := r.db.Rebind(`SELECT id, email, age, created_at, updated_at FROM user WHERE id = ?`)
 	if err := r.db.GetContext(ctx, &m, query, id); err != nil {
 		return nil, fmt.Errorf("getting user %s: %w", id, err)
@@ -51,8 +53,8 @@ func (r *Repository) Get(ctx context.Context, id uuid.UUID) (*User, error) {
 }
 
 // List returns every user.
-func (r *Repository) List(ctx context.Context) ([]User, error) {
-	var items []User
+func (r *Repository) List(ctx context.Context) ([]domainuser.User, error) {
+	var items []domainuser.User
 	query := r.db.Rebind(`SELECT id, email, age, created_at, updated_at FROM user ORDER BY created_at`)
 	if err := r.db.SelectContext(ctx, &items, query); err != nil {
 		return nil, fmt.Errorf("listing users: %w", err)
@@ -61,7 +63,7 @@ func (r *Repository) List(ctx context.Context) ([]User, error) {
 }
 
 // Update overwrites the stored fields of m, refreshing UpdatedAt.
-func (r *Repository) Update(ctx context.Context, m *User) error {
+func (r *Repository) Update(ctx context.Context, m *domainuser.User) error {
 	m.UpdatedAt = time.Now().UTC()
 
 	query := r.db.Rebind(`UPDATE user SET email = ?, age = ?, updated_at = ? WHERE id = ?`)

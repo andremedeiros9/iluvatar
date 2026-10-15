@@ -8,23 +8,24 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	pb "manwe/internal/user/pb"
+	domainuser "example/internal/domain/user"
+	pb "example/internal/rpc/user/pb"
 )
 
 // Service implements pb.UserServiceServer.
 type Service struct {
 	pb.UnimplementedUserServiceServer
 
-	repo *Repository
+	repo domainuser.Repository
 }
 
 // NewService returns a Service backed by repo.
-func NewService(repo *Repository) *Service {
+func NewService(repo domainuser.Repository) *Service {
 	return &Service{repo: repo}
 }
 
 func (s *Service) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error) {
-	m := &User{}
+	m := &domainuser.User{}
 
 	m.Email = req.Email
 
@@ -70,7 +71,7 @@ func (s *Service) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest) (*p
 		return nil, status.Errorf(codes.InvalidArgument, "invalid id: %v", err)
 	}
 
-	m := &User{ID: id}
+	m := &domainuser.User{ID: id}
 
 	m.Email = req.Email
 
@@ -90,13 +91,13 @@ func (s *Service) DeleteUser(ctx context.Context, req *pb.DeleteUserRequest) (*p
 	}
 
 	if err := s.repo.Delete(ctx, id); err != nil {
-		return nil, status.Errorf(codes.Internal, "deleting user %s: %v", req.Id, err)
+		return nil, status.Errorf(codes.Internal, "deleting user %s: %v", id, err)
 	}
 
 	return &pb.DeleteUserResponse{}, nil
 }
 
-func toProto(m *User) *pb.User {
+func toProto(m *domainuser.User) *pb.User {
 	return &pb.User{
 		Id:        m.ID.String(),
 		Email:     m.Email,

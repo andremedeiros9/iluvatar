@@ -90,29 +90,38 @@ func writeResourceFiles(dir string, rd resourceData, architecture string) error 
 }
 
 func writeHorizontalResourceFiles(dir string, rd resourceData) error {
-	// internal/domain/<resource>/model.go  — entity
-	if err := renderGo(dir, filepath.Join("internal", "domain", rd.PackageName, "model.go"), "templates/horizontal/domain/model.go.tmpl", rd); err != nil {
+	// internal/domain/<resource>.go  — entity (package domain)
+	if err := renderGo(dir, filepath.Join("internal", "domain", rd.PackageName+".go"), "templates/horizontal/domain/model.go.tmpl", rd); err != nil {
 		return fmt.Errorf("could not render domain model.go: %w", err)
 	}
-	// internal/domain/<resource>/repository.go — repository interface
-	if err := renderGo(dir, filepath.Join("internal", "domain", rd.PackageName, "repository.go"), "templates/horizontal/domain/repository.go.tmpl", rd); err != nil {
-		return fmt.Errorf("could not render domain repository.go: %w", err)
-	}
-	// internal/services/<resource>/repository.go — concrete sqlx repository
-	if err := renderGo(dir, filepath.Join("internal", "services", rd.PackageName, "repository.go"), "templates/horizontal/services/repository.go.tmpl", rd); err != nil {
-		return fmt.Errorf("could not render services repository.go: %w", err)
-	}
-	// internal/services/<resource>/service.go — application service
+	// internal/services/<resource>/service.go — service + repository interface
 	if err := renderGo(dir, filepath.Join("internal", "services", rd.PackageName, "service.go"), "templates/horizontal/services/service.go.tmpl", rd); err != nil {
 		return fmt.Errorf("could not render services service.go: %w", err)
 	}
+	// internal/repositories/<resource>/repository.go — concrete sqlx repository
+	if err := renderGo(dir, filepath.Join("internal", "repositories", rd.PackageName, "repository.go"), "templates/horizontal/repositories/repository.go.tmpl", rd); err != nil {
+		return fmt.Errorf("could not render repositories repository.go: %w", err)
+	}
 	// internal/rpc/<resource>/pb/<resource>.proto — proto definition
-	return render(dir, filepath.Join("internal", "rpc", rd.PackageName, "pb", rd.Name+".proto"), "templates/horizontal/rpc/resource.proto.tmpl", rd)
+	if err := render(dir, filepath.Join("internal", "rpc", rd.PackageName, "pb", rd.Name+".proto"), "templates/horizontal/rpc/resource.proto.tmpl", rd); err != nil {
+		return fmt.Errorf("could not render proto: %w", err)
+	}
+	// internal/rpc/<resource>/mapper.go — proto <-> domain translation
+	return renderGo(dir, filepath.Join("internal", "rpc", rd.PackageName, "mapper.go"), "templates/horizontal/rpc/mapper.go.tmpl", rd)
 }
 
 func writeAPIServer(dir, module string, resources []resourceData) error {
 	projData := projectData{Module: module, Resources: resources}
-	return renderGo(dir, filepath.Join("internal", "api", "server.go"), "templates/horizontal/api/server.go.tmpl", projData)
+	if err := renderGo(dir, filepath.Join("internal", "api", "server.go"), "templates/horizontal/api/server.go.tmpl", projData); err != nil {
+		return fmt.Errorf("could not render api server.go: %w", err)
+	}
+	// internal/api/v1/<resource>.go — gRPC endpoints per resource
+	for _, rd := range resources {
+		if err := renderGo(dir, filepath.Join("internal", "api", "v1", rd.PackageName+".go"), "templates/horizontal/api/v1/resource.go.tmpl", rd); err != nil {
+			return fmt.Errorf("could not render api/v1 %s.go: %w", rd.PackageName, err)
+		}
+	}
+	return nil
 }
 
 func writeAPIDB(dir, driver string, data templateData) error {

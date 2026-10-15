@@ -4,18 +4,20 @@ import (
 	"github.com/jmoiron/sqlx"
 	"google.golang.org/grpc"
 {{range .Resources}}
-	service{{.PascalName}} "{{$.Module}}/internal/services/{{.PackageName}}"
+	repo{{.PascalName}} "{{$.Module}}/internal/repositories/{{.PackageName}}"
+	svc{{.PascalName}} "{{$.Module}}/internal/services/{{.PackageName}}"
+	v1{{.PascalName}} "{{$.Module}}/internal/api/v1"
 	{{.PackageName}}pb "{{$.Module}}/internal/rpc/{{.PackageName}}/pb"
 {{end}})
 
-// New builds a gRPC server with every configured resource's service
-// registered, wired to its domain repository and database connection.
+// New builds a gRPC server with every configured resource's v1 endpoint
+// server registered, wired to its domain repository and database connection.
 func New(db *sqlx.DB) *grpc.Server {
 	s := grpc.NewServer()
 
-{{range .Resources}}	repo := service{{.PascalName}}.NewRepository(db)
-	svc := service{{.PascalName}}.NewService(repo)
-	{{.PackageName}}pb.Register{{.PascalName}}ServiceServer(s, svc)
+{{range .Resources}}	repo := repo{{.PascalName}}.NewRepository(db)
+	svc := svc{{.PascalName}}.NewService(repo)
+	{{.PackageName}}pb.Register{{.PascalName}}ServiceServer(s, v1{{.PascalName}}.NewServer(svc))
 {{end}}
 	return s
 }

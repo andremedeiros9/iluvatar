@@ -4,9 +4,15 @@
 # Edit it, then run `iluvatar generate` from this directory.
 
 [project]
-name       = "manwe"
-module     = "manwe"
+name       = "example"
+module     = "example"
 go_version = "1.27.1"
+# architecture selects the generated code layout:
+#   "vertical"   (default) groups each resource's model, repository, and
+#                service together under internal/<resource>.
+#   "horizontal" splits concerns into internal/domain, internal/services,
+#                internal/rpc (protos), and internal/api (bootstrap/wiring).
+architecture = "horizontal"
 
 [server]
 # framework is reserved for future REST support and currently has no
@@ -27,7 +33,7 @@ provider = "github"
 [cloud]
 # Supported providers: none, aws
 # region is only read when provider = "aws".
-provider = "none"
+provider = "aws"
 region   = "us-east-1"
 
 # Define one [[resources]] block per CRUD resource you want generated.

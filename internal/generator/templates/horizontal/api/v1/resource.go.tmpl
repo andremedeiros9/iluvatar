@@ -1,0 +1,76 @@
+package v1
+
+import (
+	"context"
+
+	"github.com/google/uuid"
+
+	pb "{{.Module}}/internal/rpc/{{.PackageName}}/pb"
+	rpcuser "{{.Module}}/internal/rpc/{{.PackageName}}"
+	svcuser "{{.Module}}/internal/services/{{.PackageName}}"
+)
+
+// Server implements pb.{{.PascalName}}ServiceServer.
+type Server struct {
+	pb.Unimplemented{{.PascalName}}ServiceServer
+
+	svc *svcuser.Service
+}
+
+// NewServer returns a Server backed by svc.
+func NewServer(svc *svcuser.Service) *Server {
+	return &Server{svc: svc}
+}
+
+func (s *Server) Create{{.PascalName}}(ctx context.Context, req *pb.Create{{.PascalName}}Request) (*pb.Create{{.PascalName}}Response, error) {
+	u := rpcuser.{{.PascalName}}FromCreateRequest(req)
+	created, err := s.svc.Create{{.PascalName}}(ctx, u)
+	if err != nil {
+		return nil, err
+	}
+	return rpcuser.{{.PascalName}}ToCreateResponse(created), nil
+}
+
+func (s *Server) Get{{.PascalName}}(ctx context.Context, req *pb.Get{{.PascalName}}Request) (*pb.Get{{.PascalName}}Response, error) {
+	id, err := uuid.Parse(req.Id)
+	if err != nil {
+		return nil, err
+	}
+	u, err := s.svc.Get{{.PascalName}}(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return rpcuser.{{.PascalName}}ToGetResponse(u), nil
+}
+
+func (s *Server) List{{.PascalName}}(ctx context.Context, req *pb.List{{.PascalName}}Request) (*pb.List{{.PascalName}}Response, error) {
+	items, err := s.svc.List{{.PascalName}}(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return rpcuser.{{.PascalName}}ToListResponse(items), nil
+}
+
+func (s *Server) Update{{.PascalName}}(ctx context.Context, req *pb.Update{{.PascalName}}Request) (*pb.Update{{.PascalName}}Response, error) {
+	id, err := uuid.Parse(req.Id)
+	if err != nil {
+		return nil, err
+	}
+	u := rpcuser.{{.PascalName}}FromUpdateRequest(req, id)
+	updated, err := s.svc.Update{{.PascalName}}(ctx, u)
+	if err != nil {
+		return nil, err
+	}
+	return rpcuser.{{.PascalName}}ToUpdateResponse(updated), nil
+}
+
+func (s *Server) Delete{{.PascalName}}(ctx context.Context, req *pb.Delete{{.PascalName}}Request) (*pb.Delete{{.PascalName}}Response, error) {
+	id, err := uuid.Parse(req.Id)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.svc.Delete{{.PascalName}}(ctx, id); err != nil {
+		return nil, err
+	}
+	return &pb.Delete{{.PascalName}}Response{}, nil
+}

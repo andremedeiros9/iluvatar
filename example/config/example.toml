@@ -1,7 +1,8 @@
 [project]
-name = 'manwe'
-module = 'manwe'
+name = 'example'
+module = 'example'
 go_version = '1.27.1'
+architecture = 'horizontal'
 
 [server]
 framework = 'net/http'
@@ -15,7 +16,7 @@ dsn = ''
 provider = 'github'
 
 [cloud]
-provider = 'none'
+provider = 'aws'
 region = 'us-east-1'
 
 [[resources]]

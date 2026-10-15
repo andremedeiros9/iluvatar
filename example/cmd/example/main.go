@@ -9,8 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"manwe/internal/db"
-	"manwe/internal/grpcserver"
+	"example/internal/api"
 )
 
 func main() {
@@ -20,7 +19,7 @@ func main() {
 }
 
 func run() error {
-	sqlDB, err := db.Open()
+	sqlDB, err := api.Open()
 	if err != nil {
 		return fmt.Errorf("opening database: %w", err)
 	}
@@ -28,7 +27,7 @@ func run() error {
 		_ = sqlDB.Close()
 	}()
 
-	srv := grpcserver.New(sqlDB)
+	srv := api.New(sqlDB)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", 8080))
 	if err != nil {

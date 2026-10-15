@@ -1,7 +1,10 @@
-BINARY := manwe
+BINARY := example
 DIST   := .dist
 
-.PHONY: build run test fmt vet lint vulns proto migrate-up migrate-down docker-build clean
+AWS_REGION     ?= us-east-1
+AWS_ACCOUNT_ID ?=
+
+.PHONY: build run test fmt vet lint vulns proto migrate-up migrate-down docker-build docker-login docker-push clean
 
 build:
 	go build -o $(DIST)/$(BINARY) ./cmd/$(BINARY)
@@ -40,6 +43,13 @@ migrate-down:
 
 docker-build:
 	docker build -t $(BINARY) .
+
+docker-login:
+	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
+
+docker-push: docker-build docker-login
+	docker tag $(BINARY):latest $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(BINARY):latest
+	docker push $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com/$(BINARY):latest
 
 clean:
 	rm -rf $(DIST)

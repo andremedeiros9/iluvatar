@@ -1,0 +1,88 @@
+package {{.PackageName}}
+
+import (
+	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	domain "{{.Module}}/internal/domain"
+	pb "{{.Module}}/internal/rpc/{{.PackageName}}/pb"
+)
+
+// {{.PascalName}}FromCreateRequest translates a proto create request into a domain entity.
+func {{.PascalName}}FromCreateRequest(req *pb.Create{{.PascalName}}Request) *domain.{{.PascalName}} {
+	u := &domain.{{.PascalName}}{}
+{{range .Fields}}{{if eq .GoType "uuid.UUID"}}
+	{{.CamelName}}, err := uuid.Parse(req.{{.PascalName}})
+	if err != nil {
+		panic(err)
+	}
+	u.{{.PascalName}} = {{.CamelName}}
+{{end}}{{if eq .GoType "time.Time"}}
+	u.{{.PascalName}} = req.{{.PascalName}}.AsTime()
+{{end}}{{if and (ne .GoType "uuid.UUID") (ne .GoType "time.Time")}}
+	u.{{.PascalName}} = req.{{.PascalName}}
+{{end}}{{end}}
+	return u
+}
+
+// {{.PascalName}}FromUpdateRequest translates a proto update request into a domain entity.
+func {{.PascalName}}FromUpdateRequest(req *pb.Update{{.PascalName}}Request, id uuid.UUID) *domain.{{.PascalName}} {
+	u := &domain.{{.PascalName}}{ID: id}
+{{range .Fields}}{{if eq .GoType "uuid.UUID"}}
+	{{.CamelName}}, err := uuid.Parse(req.{{.PascalName}})
+	if err != nil {
+		panic(err)
+	}
+	u.{{.PascalName}} = {{.CamelName}}
+{{end}}{{if eq .GoType "time.Time"}}
+	u.{{.PascalName}} = req.{{.PascalName}}.AsTime()
+{{end}}{{if and (ne .GoType "uuid.UUID") (ne .GoType "time.Time")}}
+	u.{{.PascalName}} = req.{{.PascalName}}
+{{end}}{{end}}
+	return u
+}
+
+// {{.PascalName}}ToProto translates a domain entity into its proto message.
+func {{.PascalName}}ToProto(u *domain.{{.PascalName}}) *pb.{{.PascalName}} {
+	return &pb.{{.PascalName}}{
+		Id:        u.ID.String(),
+{{range .Fields}}{{if eq .GoType "uuid.UUID"}}
+		{{.PascalName}}: u.{{.PascalName}}.String(),
+{{end}}{{if eq .GoType "time.Time"}}
+		{{.PascalName}}: timestamppb.New(u.{{.PascalName}}),
+{{end}}{{if and (ne .GoType "uuid.UUID") (ne .GoType "time.Time")}}
+		{{.PascalName}}: u.{{.PascalName}},
+{{end}}{{end}}		CreatedAt: timestamppb.New(u.CreatedAt),
+		UpdatedAt: timestamppb.New(u.UpdatedAt),
+	}
+}
+
+// {{.PascalName}}ToCreateResponse builds a create response from a domain entity.
+func {{.PascalName}}ToCreateResponse(u *domain.{{.PascalName}}) *pb.Create{{.PascalName}}Response {
+	return &pb.Create{{.PascalName}}Response{
+		{{.PascalName}}: {{.PascalName}}ToProto(u),
+	}
+}
+
+// {{.PascalName}}ToGetResponse builds a get response from a domain entity.
+func {{.PascalName}}ToGetResponse(u *domain.{{.PascalName}}) *pb.Get{{.PascalName}}Response {
+	return &pb.Get{{.PascalName}}Response{
+		{{.PascalName}}: {{.PascalName}}ToProto(u),
+	}
+}
+
+// {{.PascalName}}ToListResponse builds a list response from domain entities.
+func {{.PascalName}}ToListResponse(items []domain.{{.PascalName}}) *pb.List{{.PascalName}}Response {
+	resp := &pb.List{{.PascalName}}Response{}
+	for i := range items {
+		resp.{{.PluralPb}} = append(resp.{{.PluralPb}}, {{.PascalName}}ToProto(&items[i]))
+	}
+	return resp
+}
+
+// {{.PascalName}}ToUpdateResponse builds an update response from a domain entity.
+func {{.PascalName}}ToUpdateResponse(u *domain.{{.PascalName}}) *pb.Update{{.PascalName}}Response {
+	return &pb.Update{{.PascalName}}Response{
+		{{.PascalName}}: {{.PascalName}}ToProto(u),
+	}
+}

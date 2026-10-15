@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package user;
 
-option go_package = "manwe/internal/user/pb;userpb";
+option go_package = "example/internal/rpc/user/pb;userpb";
 
 import "google/protobuf/timestamp.proto";
 
