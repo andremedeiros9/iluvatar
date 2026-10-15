@@ -3,6 +3,8 @@ name: CI
 # Runs on every pull request, before merging.
 on:
   pull_request:
+  push:
+    branches: [main]
 
 permissions:
   contents: read
@@ -26,7 +28,12 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - run: go test ./...
+      - run: go test -coverprofile=coverage.out ./...
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.out
+          fail_ci_if_error: false
 
   vulns:
     runs-on: ubuntu-latest

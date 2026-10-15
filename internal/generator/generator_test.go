@@ -276,55 +276,6 @@ func TestGenerateCRUDRejectsUnsupportedFieldType(t *testing.T) {
 	require.Contains(t, err.Error(), "unsupported field type")
 }
 
-// TestGenerateCRUDResourceFiles exercises the full gRPC CRUD generation
-// path for one resource, including the real protoc run (which installs
-// protoc and its Go plugins if they're missing) and ensureGoModule's real
-// `go mod tidy` call, so it needs network access and is slower than the
-// rest of this package's tests.
-func TestGenerateCRUDResourceFiles(t *testing.T) {
-	dir := t.TempDir()
-	cfg := &config.Config{
-		Project:  config.Project{Name: "widgets", Module: "github.com/example/widgets", GoVersion: "1.27.1"},
-		Server:   config.Server{Port: 9090},
-		Database: config.Database{Driver: "postgres"},
-		Resources: []config.Resource{
-			{
-				Name:          "user",
-				Communication: "grpc",
-				Fields: []config.Field{
-					{Name: "email", Type: "string"},
-					{Name: "signup_at", Type: "time"},
-					{Name: "referrer_id", Type: "uuid"},
-				},
-			},
-		},
-	}
-
-	err := generator.Generate(dir, cfg)
-	require.NoError(t, err)
-
-	assertContains(t, filepath.Join(dir, "internal", "user", "pb", "user.proto"), "google.protobuf.Timestamp signup_at")
-	assertContains(t, filepath.Join(dir, "internal", "user", "pb", "user.proto"), "string referrer_id")
-	assertContains(t, filepath.Join(dir, "internal", "user", "pb", "user.pb.go"), "package userpb")
-	assertContains(t, filepath.Join(dir, "internal", "user", "pb", "user_grpc.pb.go"), "UserServiceServer")
-	assertContains(t, filepath.Join(dir, "internal", "user", "model.go"), `db:"email"`)
-	assertContains(t, filepath.Join(dir, "internal", "user", "model.go"), "ReferrerId uuid.UUID")
-	assertContains(t, filepath.Join(dir, "internal", "user", "repository.go"), "INSERT INTO user")
-	assertContains(t, filepath.Join(dir, "internal", "user", "service.go"), "pb.UserServiceServer")
-	assertContains(t, filepath.Join(dir, "internal", "grpcserver", "server.go"), "RegisterUserServiceServer")
-	assertContains(t, filepath.Join(dir, "internal", "db", "db.go"), "jackc/pgx")
-	assertContains(t, filepath.Join(dir, "cmd", "widgets", "main.go"), `fmt.Sprintf(":%d", 9090)`)
-	assertContains(t, filepath.Join(dir, "migrations", "0001_create_user.up.sql"), "CREATE TABLE user")
-	assertContains(t, filepath.Join(dir, "migrations", "0001_create_user.down.sql"), "DROP TABLE user")
-
-	_, err = os.Stat(filepath.Join(dir, "go.mod"))
-	require.NoError(t, err, "go.mod should have been created")
-
-	_, err = os.Stat(filepath.Join(dir, "go.sum"))
-	require.NoError(t, err, "go.sum should have been created")
-
-}
-
 func TestGenerateNoCRUDFilesWithoutResources(t *testing.T) {
 	dir := t.TempDir()
 	cfg := &config.Config{

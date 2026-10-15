@@ -28,6 +28,9 @@
             The One who sings your services into being.
 ```
 
+[![CI](https://github.com/andremedeiros9/iluvatar/actions/workflows/ci.yml/badge.svg)](https://github.com/andremedeiros9/iluvatar/actions/workflows/ci.yml)
+[![Codecov](https://img.shields.io/codecov/c/github/andremedeiros9/iluvatar)](https://app.codecov.io/gh/andremedeiros9/iluvatar)
+
 ## Install
 Pick the instructions for your system.
 
