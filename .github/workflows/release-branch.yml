@@ -1,0 +1,28 @@
+name: Create Release Branch
+
+# Runs only when a PR is merged into main (push to main).
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  create-release-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine next release version
+        id: version
+        run: bash ./misc/release-branch.sh determine-version
+
+      - name: Create release branch from main
+        run: bash ./misc/release-branch.sh create-branch "${{ steps.version.outputs.new_version }}"
+
+      - name: Set release branch as default
+        run: bash ./misc/release-branch.sh set-default-branch "${{ steps.version.outputs.new_version }}"
