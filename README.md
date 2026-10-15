@@ -162,16 +162,80 @@ don't use them elsewhere.
 A code generator for RESTful APIs with basic CRUD actions. Generated code is
 always Go, for now.
 
-## Usage (planned)
+## Usage
 
 ```
 iluvatar init <path>
 ```
 
-Creates `<path>` and writes a starter `iluvatar.toml` into it, pre-filled
-with defaults (database driver, HTTP framework, etc.) for you to edit.
-Running `iluvatar generate` against that file will then scaffold the actual
-Go REST API.
+Creates `<path>` and writes a starter `iluvatar.toml` into it. When run in a
+terminal (not piped/CI), `init` walks you through the values interactively
+with sensible defaults in brackets — project name, module path, code
+architecture, server port, database driver, CI provider, and cloud provider.
+Press enter to keep any default.
+
+```
+iluvatar init myapp --architecture horizontal --module github.com/example/myapp
+```
+
+Flags:
+
+- `--module` — Go module path (defaults to the directory name).
+- `--architecture` — Code layout: `"vertical"` (default) or `"horizontal"`.
+- `--non-interactive` — Skip prompts and use defaults/flags (for CI).
+
+After editing `iluvatar.toml` to add your `[[resources]]`, run:
+
+```
+iluvatar generate <path>
+```
+
+This scaffolds the Go project: build tooling, CI pipeline, Dockerfile,
+docker-compose (postgres/mysql), `.gitignore`, runtime config, and the gRPC
+CRUD implementation for each resource.
+
+### Code architecture
+
+`iluvatar init` lets you choose between two generated layouts:
+
+**Vertical** (default) — each resource keeps its model, repository, and
+service together:
+
+```
+internal/<resource>/
+  model.go
+  repository.go
+  service.go
+  pb/<resource>.proto
+internal/grpcserver/   gRPC server bootstrap
+internal/db/           database connection
+cmd/<app>/main.go
+```
+
+**Horizontal** — concerns are split into layers:
+
+```
+internal/domain/
+  <resource>.go            entity
+internal/services/<resource>/
+  service.go               app service + UserRepository interface
+internal/repositories/<resource>/
+  repository.go            concrete sqlx repository
+internal/rpc/<resource>/
+  mapper.go                proto ↔ domain translation
+  pb/<resource>.proto      proto definition
+internal/api/
+  db.go                    database connection
+  server.go                gRPC server + DI wiring
+  v1/<resource>.go         gRPC endpoints
+cmd/<app>/main.go
+```
+
+Data flow in the horizontal layout: the `api/v1` endpoint calls
+`rpc.<Resource>From*Request` (proto → domain), then the service
+(domain-only, no proto imports), then `rpc.<Resource>To*Response`
+(domain → proto). `internal/domain/` knows nothing about proto, gRPC, or
+the database.
 
 ## Architecture
 
