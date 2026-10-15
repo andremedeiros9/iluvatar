@@ -23,9 +23,32 @@ type Config struct {
 
 // Project identifies the generated module.
 type Project struct {
-	Name      string `toml:"name"`
-	Module    string `toml:"module"`
-	GoVersion string `toml:"go_version"`
+	Name         string `toml:"name"`
+	Module       string `toml:"module"`
+	GoVersion    string `toml:"go_version"`
+	Architecture string `toml:"architecture"`
+}
+
+// Architecture is the code layout iluvatar generates. "vertical" groups
+// each resource's model, repository, and service together under
+// internal/<resource>. "horizontal" splits concerns into internal/domain,
+// internal/services, internal/rpc, and internal/api.
+const (
+	ArchitectureVertical   = "vertical"
+	ArchitectureHorizontal = "horizontal"
+)
+
+// NormalizeArchitecture returns the effective architecture, defaulting to
+// vertical, and errors on anything unsupported.
+func NormalizeArchitecture(raw string) (string, error) {
+	switch raw {
+	case "", ArchitectureVertical:
+		return ArchitectureVertical, nil
+	case ArchitectureHorizontal:
+		return raw, nil
+	default:
+		return "", fmt.Errorf("unsupported architecture %q (want %q or %q)", raw, ArchitectureVertical, ArchitectureHorizontal)
+	}
 }
 
 // Server configures the generated server.

@@ -7,28 +7,34 @@
 name       = "{{.Name}}"
 module     = "{{.Module}}"
 go_version = "{{.GoVersion}}"
+# architecture selects the generated code layout:
+#   "vertical"   (default) groups each resource's model, repository, and
+#                service together under internal/<resource>.
+#   "horizontal" splits concerns into internal/domain, internal/services,
+#                internal/rpc (protos), and internal/api (bootstrap/wiring).
+architecture = "{{.Architecture}}"
 
 [server]
 # framework is reserved for future REST support and currently has no
 # effect; only gRPC resources are generated today.
 framework = "net/http"
 # port is the gRPC server's listen port.
-port = 8080
+port = {{.Port}}
 
 [database]
 # Supported drivers: postgres, mysql, sqlite
-driver = "postgres"
+driver = "{{.DatabaseDriver}}"
 dsn    = ""
 
 [ci]
 # Supported providers: github, gitlab
-provider = "github"
+provider = "{{.CIProvider}}"
 
 [cloud]
 # Supported providers: none, aws
 # region is only read when provider = "aws".
-provider = "none"
-region   = "us-east-1"
+provider = "{{.CloudProvider}}"
+region   = "{{.CloudRegion}}"
 
 # Define one [[resources]] block per CRUD resource you want generated.
 # communication selects how this resource's endpoints are exposed. Only

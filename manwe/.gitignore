@@ -1,0 +1,16 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+.dist/
+
+# Test artifacts
+*.test
+*.out
+coverage.*
+*.coverprofile
+
+# Local environment
+.env

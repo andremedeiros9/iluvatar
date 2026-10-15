@@ -1,0 +1,31 @@
+[project]
+name = 'manwe'
+module = 'manwe'
+go_version = '1.27.1'
+
+[server]
+framework = 'net/http'
+port = 8080
+
+[database]
+driver = 'postgres'
+dsn = ''
+
+[ci]
+provider = 'github'
+
+[cloud]
+provider = 'none'
+region = 'us-east-1'
+
+[[resources]]
+name = 'user'
+communication = 'grpc'
+
+[[resources.fields]]
+name = 'email'
+type = 'string'
+
+[[resources.fields]]
+name = 'age'
+type = 'int'

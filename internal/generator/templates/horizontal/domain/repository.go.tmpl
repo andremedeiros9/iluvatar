@@ -1,0 +1,21 @@
+package {{.PackageName}}
+
+import (
+	"context"
+
+	"github.com/google/uuid"
+)
+
+// Repository persists {{.PascalName}} records.
+type Repository interface {
+	// Create inserts m, setting its ID, CreatedAt, and UpdatedAt.
+	Create(ctx context.Context, m *{{.PascalName}}) error
+	// Get returns the {{.LowerName}} with the given id.
+	Get(ctx context.Context, id uuid.UUID) (*{{.PascalName}}, error)
+	// List returns every {{.LowerName}}.
+	List(ctx context.Context) ([]{{.PascalName}}, error)
+	// Update overwrites the stored fields of m, refreshing UpdatedAt.
+	Update(ctx context.Context, m *{{.PascalName}}) error
+	// Delete removes the {{.LowerName}} with the given id.
+	Delete(ctx context.Context, id uuid.UUID) error
+}

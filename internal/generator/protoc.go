@@ -35,6 +35,11 @@ func generateProtos(dir string, logf func(format string, args ...any)) error {
 	if err != nil {
 		return fmt.Errorf("looking for .proto files: %w", err)
 	}
+	rpcProtos, err := filepath.Glob(filepath.Join(dir, "internal", "rpc", "*", "pb", "*.proto"))
+	if err != nil {
+		return fmt.Errorf("looking for .proto files: %w", err)
+	}
+	protos = append(protos, rpcProtos...)
 	if len(protos) == 0 {
 		return nil
 	}

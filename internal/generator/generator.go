@@ -23,6 +23,7 @@ type templateData struct {
 	Port                int
 	CloudProvider       string
 	CloudRegion         string
+	Architecture        string
 }
 
 // Generate writes the generated project's build tooling, deployment
@@ -49,6 +50,11 @@ func Generate(dir string, cfg *config.Config, opts ...Option) error {
 		return err
 	}
 
+	architecture, err := config.NormalizeArchitecture(cfg.Project.Architecture)
+	if err != nil {
+		return err
+	}
+
 	data := templateData{
 		BinaryName:          cfg.Project.Name,
 		Module:              cfg.Project.Module,
@@ -57,6 +63,7 @@ func Generate(dir string, cfg *config.Config, opts ...Option) error {
 		Port:                cfg.Server.Port,
 		CloudProvider:       cloudProvider,
 		CloudRegion:         cfg.Cloud.Region,
+		Architecture:        architecture,
 	}
 
 	type step struct {

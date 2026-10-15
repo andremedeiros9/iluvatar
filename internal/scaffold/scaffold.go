@@ -21,6 +21,19 @@ type Options struct {
 	Name string
 	// Module is the Go module path recorded in iluvatar.toml.
 	Module string
+	// Architecture is the code layout to generate: "vertical" (default)
+	// or "horizontal".
+	Architecture string
+	// Port is the gRPC server's listen port.
+	Port int
+	// DatabaseDriver is one of: postgres, mysql, sqlite.
+	DatabaseDriver string
+	// CIProvider is one of: github, gitlab.
+	CIProvider string
+	// CloudProvider is one of: none, aws.
+	CloudProvider string
+	// CloudRegion is the provider region (only used with aws).
+	CloudRegion string
 }
 
 // Init creates path (if needed) and writes a starter iluvatar.toml into it.
@@ -39,6 +52,32 @@ func Init(path string, opts Options) error {
 		return fmt.Errorf("error while checking for existing %s: %w", config.FileName, err)
 	}
 
+	// Apply sensible defaults for any zero-valued options.
+	architecture := opts.Architecture
+	if architecture == "" {
+		architecture = config.ArchitectureVertical
+	}
+	port := opts.Port
+	if port == 0 {
+		port = 8080
+	}
+	databaseDriver := opts.DatabaseDriver
+	if databaseDriver == "" {
+		databaseDriver = "postgres"
+	}
+	ciProvider := opts.CIProvider
+	if ciProvider == "" {
+		ciProvider = "github"
+	}
+	cloudProvider := opts.CloudProvider
+	if cloudProvider == "" {
+		cloudProvider = "none"
+	}
+	cloudRegion := opts.CloudRegion
+	if cloudRegion == "" {
+		cloudRegion = "us-east-1"
+	}
+
 	tmpl, err := template.ParseFS(templatesFS, "templates/iluvatar.toml.tmpl")
 	if err != nil {
 		return fmt.Errorf("error while parsing config template: %w", err)
@@ -53,13 +92,25 @@ func Init(path string, opts Options) error {
 	}()
 
 	data := struct {
-		Name      string
-		Module    string
-		GoVersion string
+		Name           string
+		Module         string
+		GoVersion      string
+		Architecture   string
+		Port           int
+		DatabaseDriver string
+		CIProvider     string
+		CloudProvider  string
+		CloudRegion    string
 	}{
-		Name:      opts.Name,
-		Module:    opts.Module,
-		GoVersion: strings.TrimPrefix(runtime.Version(), "go"),
+		Name:           opts.Name,
+		Module:         opts.Module,
+		GoVersion:      strings.TrimPrefix(runtime.Version(), "go"),
+		Architecture:   architecture,
+		Port:           port,
+		DatabaseDriver: databaseDriver,
+		CIProvider:     ciProvider,
+		CloudProvider:  cloudProvider,
+		CloudRegion:    cloudRegion,
 	}
 
 	if err := tmpl.Execute(f, data); err != nil {
