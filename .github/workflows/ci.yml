@@ -28,11 +28,11 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - run: go test -coverprofile=coverage.out ./...
+      - run: go test -coverprofile=coverage.txt ./...
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
-          file: ./coverage.out
+          file: ./coverage.txt
           fail_ci_if_error: false
 
   vulns:
