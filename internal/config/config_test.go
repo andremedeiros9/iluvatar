@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/andremedeiros9/iluvatar/internal/config"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLoad(t *testing.T) {
@@ -110,4 +111,23 @@ func TestSave(t *testing.T) {
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("round-tripped config mismatch:\ngot  %+v\nwant %+v", got, want)
 	}
+}
+
+func TestLoadMissingFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, config.FileName)
+
+	_, err := config.Load(path)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "error reading config")
+}
+
+func TestLoadInvalidTOML(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, config.FileName)
+	require.NoError(t, os.WriteFile(path, []byte("not = valid toml [[["), 0o644))
+
+	_, err := config.Load(path)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "error parsing config")
 }

@@ -79,6 +79,45 @@ anything else:
 go install github.com/andremedeiros9/iluvatar/cmd/iluvatar@latest
 ```
 
+## Development setup
+
+After cloning the repository, run `make setup` to install the Go toolchain
+(if missing) and the development tools (`golangci-lint`, `govulncheck`) used
+by `make lint` and `make vulns`.
+
+If `make setup` installs Go for the first time, add `/usr/local/go/bin` to
+your shell's `PATH` so `go` is available in future terminals, then re-run
+`make setup`.
+
+### Bash
+
+```sh
+echo 'export PATH=${PATH}:/usr/local/go/bin' >> ~/.bashrc
+source ~/.bashrc
+```
+
+### Zsh
+
+```sh
+echo 'export PATH=${PATH}:/usr/local/go/bin' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### Behind a proxy or no IPv6 (e.g. WSL)
+
+If `make setup` fails to download `golangci-lint` or `govulncheck` because the
+Go proxy is unreachable, override `GOPROXY`:
+
+```sh
+make setup GOPROXY=https://goproxy.io
+```
+
+Or to fetch directly from the source instead of through a proxy:
+
+```sh
+make setup GOPROXY=direct
+```
+
 ## Uninstall
 
 Uninstalling removes the `iluvatar` binary and the `protoc` copy iluvatar

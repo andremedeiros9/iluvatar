@@ -1,7 +1,7 @@
 package config
 
 import (
-	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -82,12 +82,12 @@ type Resource struct {
 func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, errors.New("error reading config: %v" + err.Error())
+		return nil, fmt.Errorf("error reading config: %w", err)
 	}
 
 	var cfg Config
 	if err := toml.Unmarshal(data, &cfg); err != nil {
-		return nil, errors.New("error parsing config: %v" + err.Error())
+		return nil, fmt.Errorf("error parsing config: %w", err)
 	}
 
 	return &cfg, nil
@@ -98,15 +98,15 @@ func Load(path string) (*Config, error) {
 func Save(path string, cfg *Config) error {
 	data, err := toml.Marshal(cfg)
 	if err != nil {
-		return errors.New("error while encoding config: " + err.Error())
+		return fmt.Errorf("error while encoding config: %w", err)
 	}
 
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return errors.New("error while creating directory for config: " + err.Error())
+		return fmt.Errorf("error while creating directory for config: %w", err)
 	}
 
 	if err := os.WriteFile(path, data, 0o644); err != nil {
-		return errors.New("error while writing config: " + err.Error())
+		return fmt.Errorf("error while writing config: %w", err)
 	}
 
 	return nil
