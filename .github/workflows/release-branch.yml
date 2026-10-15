@@ -25,4 +25,6 @@ jobs:
         run: bash ./misc/release-branch.sh create-branch "${{ steps.version.outputs.new_version }}"
 
       - name: Set release branch as default
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: bash ./misc/release-branch.sh set-default-branch "${{ steps.version.outputs.new_version }}"
