@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/andremedeiros9/iluvatar/internal/config"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLoad(t *testing.T) {
@@ -110,4 +111,108 @@ func TestSave(t *testing.T) {
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("round-tripped config mismatch:\ngot  %+v\nwant %+v", got, want)
 	}
+}
+
+func TestLoadMissingFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, config.FileName)
+
+	_, err := config.Load(path)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "error reading config")
+}
+
+func TestLoadInvalidTOML(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, config.FileName)
+	require.NoError(t, os.WriteFile(path, []byte("not = valid toml [[["), 0o644))
+
+	_, err := config.Load(path)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "error parsing config")
+}
+
+func TestLoadEmptyFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, config.FileName)
+	require.NoError(t, os.WriteFile(path, []byte(""), 0o644))
+
+	cfg, err := config.Load(path)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+	require.Empty(t, cfg.Project.Name)
+	require.Empty(t, cfg.Project.Module)
+	require.Empty(t, cfg.Project.GoVersion)
+	require.Empty(t, cfg.Server.Framework)
+	require.Zero(t, cfg.Server.Port)
+	require.Empty(t, cfg.Database.Driver)
+	require.Empty(t, cfg.Database.DSN)
+	require.Empty(t, cfg.CI.Provider)
+	require.Empty(t, cfg.Cloud.Provider)
+	require.Empty(t, cfg.Cloud.Region)
+	require.Empty(t, cfg.Resources)
+}
+
+func TestLoadPartialConfig(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, config.FileName)
+	require.NoError(t, os.WriteFile(path, []byte(`
+[project]
+name = "partial"
+`+"\n"), 0o644))
+
+	cfg, err := config.Load(path)
+	require.NoError(t, err)
+	require.Equal(t, "partial", cfg.Project.Name)
+	require.Empty(t, cfg.Project.Module)
+	require.Empty(t, cfg.Server.Framework)
+	require.Empty(t, cfg.Database.Driver)
+	require.Empty(t, cfg.Resources)
+}
+
+func TestSaveCreatesParentDirectories(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "deep", "nested", "config", "widgets.toml")
+
+	want := &config.Config{
+		Project: config.Project{Name: "widgets"},
+	}
+
+	require.NoError(t, config.Save(path, want))
+
+	_, err := os.Stat(path)
+	require.NoError(t, err, "file should exist at nested path")
+
+	got, err := config.Load(path)
+	require.NoError(t, err)
+	require.Equal(t, want.Project.Name, got.Project.Name)
+}
+
+func TestSaveZeroValues(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "zero.toml")
+
+	want := &config.Config{}
+	require.NoError(t, config.Save(path, want))
+
+	got, err := config.Load(path)
+	require.NoError(t, err)
+	require.Empty(t, got.Project.Name)
+	require.Empty(t, got.Server.Framework)
+	require.Zero(t, got.Server.Port)
+	require.Empty(t, got.Resources)
+}
+
+func TestLoadUnknownFieldsIgnored(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, config.FileName)
+	require.NoError(t, os.WriteFile(path, []byte(`
+[project]
+name = "widgets"
+unknown_field = "ignored"
+`+"\n"), 0o644))
+
+	cfg, err := config.Load(path)
+	require.NoError(t, err)
+	require.Equal(t, "widgets", cfg.Project.Name)
 }

@@ -27,14 +27,22 @@ func newInitCommand() *cobra.Command {
 				mod = name
 			}
 
+			bar := newProgressBar(cmd.ErrOrStderr())
+			bar.Step(0, 1, "Writing "+config.FileName)
 			if err := scaffold.Init(path, scaffold.Options{
 				Name:   name,
 				Module: mod,
 			}); err != nil {
+				bar.Stop()
 				return errors.New("failed to initialize project: " + err.Error())
 			}
+			bar.Done()
 
-			log.New(cmd.OutOrStdout(), "", 0).Printf("Created %s\n", filepath.Join(path, config.FileName)) 
+			configPath := filepath.Join(path, config.FileName)
+			if abs, err := filepath.Abs(configPath); err == nil {
+				configPath = abs
+			}
+			log.New(cmd.OutOrStdout(), "", 0).Printf("Created %s\n", configPath)
 
 			return nil
 		},
